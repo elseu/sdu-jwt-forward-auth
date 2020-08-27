@@ -4,6 +4,8 @@ import * as logger from "koa-logger";
 import * as dotenv from "dotenv";
 
 import { loadJwtMiddleware } from "./jwt-middleware";
+import { tokenToHeaders } from "./token-to-headers";
+import { isTruthy } from "./util";
 
 type TokenData = Record<string, unknown>;
 
@@ -17,15 +19,32 @@ const router = new Router();
 
     app.use(await loadJwtMiddleware());
 
-    router.get("/", (ctx: Koa.ParameterizedContext<{ user: TokenData }>) => {
-        ctx.body = "";
-        console.log(ctx.state.user);
-    });
+    const headerPrefix = process.env.HEADER_PREFIX ?? "X-Auth-";
+    console.log("Header prefix:", headerPrefix);
+
+    // Main authentication route.
+    router.get(
+        "/",
+        (ctx: Koa.ParameterizedContext<{ user: TokenData | undefined }>) => {
+            ctx.body = "";
+            if (ctx.state.user) {
+                ctx.set(tokenToHeaders(ctx.state.user, { headerPrefix }));
+            } else if (ctx.headers.authorization) {
+                // It's OK if you don't pass an authorization header if REQUIRE_TOKEN is not true.
+                // But passing an invalid authorization header? That's forbidden.
+                ctx.status = 403;
+            }
+        }
+    );
+
+    // Health check.
     router.get("/_health", (ctx) => {
         ctx.body = "OK";
     });
 
-    app.use(logger());
+    if (isTruthy(process.env.LOG_REQUESTS)) {
+        app.use(logger());
+    }
     app.use(router.middleware());
 
     const port = parseInt(process.env.PORT ?? "3000");

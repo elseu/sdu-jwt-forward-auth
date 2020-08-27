@@ -3,7 +3,7 @@ FROM node:14-alpine
 ADD . /app
 WORKDIR /app
 
-RUN npm i && npm run build && rm -rf node_modules
+RUN npm i && npm run build && npm cache clean --force && rm -rf node_modules
 RUN npm i --production
 
 ENV PORT=80

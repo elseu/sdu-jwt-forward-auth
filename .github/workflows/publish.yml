@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Determine tag name
         id: get_tag
-        run: echo ::set-output name=tag::${GITHUB_REF/refs\/tags\//}
+        run: echo ::set-env name=GIT_TAG::${GITHUB_REF/refs\/tags\/v/}
       - name: Log in with Docker Hub
         run: echo "$DOCKER_PASSWORD" | docker login -u $DOCKER_USERNAME --password-stdin
         env:
@@ -23,11 +23,7 @@ jobs:
         run: docker build -t jwt-forward-auth .
       - name: Push to latest
         if: github.ref == 'refs/heads/master'
-        run: docker tag jwt-forward-auth elssdu/jwt-forward-auth:$DOCKER_TAG && docker push elssdu/jwt-forward-auth:$DOCKER_TAG
-        env:
-          DOCKER_TAG: latest
+        run: docker tag jwt-forward-auth elssdu/jwt-forward-auth:latest && docker push elssdu/jwt-forward-auth:latest
       - name: Push to tag
-        if: steps.get_tag.outputs.tag
-        run: docker tag jwt-forward-auth elssdu/jwt-forward-auth:$DOCKER_TAG && docker push elssdu/jwt-forward-auth:$DOCKER_TAG
-        env:
-          DOCKER_TAG: ${{ steps.get_tag.outputs.tag }}
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: docker tag jwt-forward-auth elssdu/jwt-forward-auth:$GIT_TAG && docker push elssdu/jwt-forward-auth:$GIT_TAG

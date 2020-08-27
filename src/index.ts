@@ -31,9 +31,10 @@ const router = new Router();
                 ctx.set(tokenToHeaders(ctx.state.user, { headerPrefix }));
             } else if (ctx.headers.authorization) {
                 // It's OK if you don't pass an authorization header if REQUIRE_TOKEN is not true.
-                // But passing an invalid authorization header? That's forbidden.
-                ctx.status = 403;
+                // But passing an invalid authorization header? That's not OK.
+                ctx.status = 401;
             }
+            ctx.set("Authorization", "");
         }
     );
 

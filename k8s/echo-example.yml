@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oidc-auth-provider-echo-example-deployment
+  namespace: oidc-auth-provider
+  labels:
+    app: oidc-auth-provider-echo-example
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oidc-auth-provider-echo-example
+  template:
+    metadata:
+      labels:
+        app: oidc-auth-provider-echo-example
+    spec:
+      containers:
+        - name: oidc-auth-provider-echo-example
+          image: mendhak/http-https-echo
+          resources:
+            requests:
+              memory: "50Mi"
+              cpu: "50m"
+            limits:
+              memory: "50Mi"
+              cpu: "50m"
+          ports:
+            - name: http
+              containerPort: 80
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: oidc-auth-provider-echo-example-service
+  namespace: oidc-auth-provider
+  labels:
+    app: oidc-auth-provider-echo-example
+spec:
+  selector:
+    app: oidc-auth-provider-echo-example
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/auth-url: http://oidc-auth-provider-service.oidc-auth-provider.svc.cluster.local/
+    nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Sub, X-Auth-Client-Id, X-Auth-Role, Authorization
+  generation: 1
+  labels:
+    app: oidc-auth-provider-echo-example
+  name: oidc-auth-provider-echo-example-ingress
+  namespace: oidc-auth-provider
+spec:
+  rules:
+    - host: echo.example.com
+      http:
+        paths:
+          - backend:
+              serviceName: oidc-auth-provider-echo-example-service
+              servicePort: 80
+  tls:
+    - hosts:
+        - echo.example.com
+      secretName: tls-oidc-auth-provider-echo-example-ingress

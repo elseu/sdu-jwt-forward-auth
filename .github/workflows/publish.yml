@@ -1,4 +1,4 @@
-name: Publish Docker tag
+name: Publish to Docker Hub
 on:
   push:
     tags:
@@ -6,48 +6,28 @@ on:
     branches:
       - master
 jobs:
-  checkout:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Determine tag name
         id: get_tag
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
-    outputs:
-      git_tag: ${{ steps.get_tag.outputs.tag }}
-
-  docker-login:
-    runs-on: ubuntu-latest
-    steps:
+        run: echo ::set-output name=tag::${GITHUB_REF/refs\/tags\//}
       - name: Log in with Docker Hub
         run: echo "$DOCKER_PASSWORD" | docker login -u $DOCKER_USERNAME --password-stdin
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-
-  docker-build:
-    runs-on: ubuntu-latest
-    needs: [checkout]
-    steps:
       - name: Build docker image
         run: docker build -t jwt-forward-auth .
-
-  docker-push-latest:
-    runs-on: ubuntu-latest
-    needs: [checkout, docker-build, docker-login]
-    if: github.ref == 'refs/heads/master'
-    steps:
-      - name: Push to Docker Hub
+      - name: Push to latest
+        if: github.ref == 'refs/heads/master'
         run: docker tag jwt-forward-auth elssdu/jwt-forward-auth:$DOCKER_TAG && docker push elssdu/jwt-forward-auth:$DOCKER_TAG
         env:
           DOCKER_TAG: latest
-
-  docker-push-tag:
-    runs-on: ubuntu-latest
-    needs: [checkout, docker-build, docker-login]
-    if: needs.checkout.outputs.git_tag
-    steps:
-      - name: Push to Docker Hub
+      - name: Push to tag
+        if: steps.get_tag.outputs.tag
         run: docker tag jwt-forward-auth elssdu/jwt-forward-auth:$DOCKER_TAG && docker push elssdu/jwt-forward-auth:$DOCKER_TAG
         env:
-          DOCKER_TAG: ${{ needs.checkout.outputs.git_tag }}
+          DOCKER_TAG: ${{ steps.get_tag.outputs.tag }}

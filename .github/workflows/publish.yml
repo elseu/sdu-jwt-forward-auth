@@ -25,7 +25,6 @@ jobs:
         run: docker tag jwt-forward-auth elssdu/jwt-forward-auth:latest && docker push elssdu/jwt-forward-auth:latest
 
       - name: Determine release tag
-        id: get_tag
         if: startsWith(github.ref, 'refs/tags/release-')
         run: echo ::set-env name=RELEASE_TAG::${GITHUB_REF/refs\/tags\/release-/}
       - name: Push to release tag
@@ -33,7 +32,6 @@ jobs:
         run: docker tag jwt-forward-auth elssdu/jwt-forward-auth:$RELEASE_TAG && docker push elssdu/jwt-forward-auth:$RELEASE_TAG
 
       - name: Determine release branch
-        id: get_tag
         if: startsWith(github.ref, 'refs/heads/release-')
         run: echo ::set-env name=RELEASE_BRANCH::${GITHUB_REF/refs\/heads\/release-/}
       - name: Push to release branch

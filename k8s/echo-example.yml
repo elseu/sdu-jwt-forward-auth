@@ -1,22 +1,27 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: forward-auth
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: oidc-auth-provider-echo-example-deployment
-  namespace: oidc-auth-provider
+  name: echo
+  namespace: forward-auth
   labels:
-    app: oidc-auth-provider-echo-example
+    app: echo
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: oidc-auth-provider-echo-example
+      app: echo
   template:
     metadata:
       labels:
-        app: oidc-auth-provider-echo-example
+        app: echo
     spec:
       containers:
-        - name: oidc-auth-provider-echo-example
+        - name: echo
           image: mendhak/http-https-echo
           resources:
             requests:
@@ -26,45 +31,42 @@ spec:
               memory: "50Mi"
               cpu: "50m"
           ports:
-            - name: http
-              containerPort: 80
+            - containerPort: 80
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: oidc-auth-provider-echo-example-service
-  namespace: oidc-auth-provider
+  name: echo
+  namespace: forward-auth
   labels:
-    app: oidc-auth-provider-echo-example
+    app: echo
 spec:
+  type: ClusterIP
   selector:
-    app: oidc-auth-provider-echo-example
+    app: echo
   ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 80
+    - port: 80
 ---
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/auth-url: http://oidc-auth-provider-service.oidc-auth-provider.svc.cluster.local/
-    nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Sub, X-Auth-Client-Id, X-Auth-Role, Authorization
-  generation: 1
+    cert-manager.io/cluster-issuer: ca
+    nginx.ingress.kubernetes.io/auth-url: http://jwt-forward-auth.forward-auth.svc.cluster.local/
+    nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Sub, X-Auth-Client-Id, X-Auth-Role, X-Auth-Scope, Authorization
   labels:
-    app: oidc-auth-provider-echo-example
-  name: oidc-auth-provider-echo-example-ingress
-  namespace: oidc-auth-provider
+    app: echo
+  name: echo
+  namespace: forward-auth
 spec:
   rules:
-    - host: echo.example.com
+    - host: echo-auth.local
       http:
         paths:
           - backend:
-              serviceName: oidc-auth-provider-echo-example-service
+              serviceName: echo
               servicePort: 80
   tls:
     - hosts:
-        - echo.example.com
-      secretName: tls-oidc-auth-provider-echo-example-ingress
+        - echo-auth.local
+      secretName: tls-echo-ingress

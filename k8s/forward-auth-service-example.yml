@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: elssdu/jwt-forward-auth:0.1
+          image: elssdu/jwt-forward-auth:latest
           resources:
             requests:
               memory: "50Mi"

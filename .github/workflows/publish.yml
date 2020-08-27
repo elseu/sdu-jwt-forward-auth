@@ -4,10 +4,10 @@ env:
 on:
   push:
     tags:
-      - "release-*"
+      - "v*"
     branches:
       - master
-      - "release-*"
+      - "release/*"
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -27,15 +27,15 @@ jobs:
         run: docker tag $DOCKER_IMAGE $DOCKER_IMAGE:latest && docker push $DOCKER_IMAGE:latest
 
       - name: Determine release tag
-        if: startsWith(github.ref, 'refs/tags/release-')
-        run: echo ::set-env name=RELEASE_TAG::${GITHUB_REF/refs\/tags\/release-/}
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: echo ::set-env name=RELEASE_TAG::${GITHUB_REF/refs\/tags\/v/}
       - name: Push to release tag
-        if: startsWith(github.ref, 'refs/tags/release-')
+        if: startsWith(github.ref, 'refs/tags/v')
         run: docker tag $DOCKER_IMAGE $DOCKER_IMAGE:$RELEASE_TAG && docker push $DOCKER_IMAGE:$RELEASE_TAG
 
       - name: Determine release branch
-        if: startsWith(github.ref, 'refs/heads/release-')
-        run: echo ::set-env name=RELEASE_BRANCH::${GITHUB_REF/refs\/heads\/release-/}
+        if: startsWith(github.ref, 'refs/heads/release/')
+        run: echo ::set-env name=RELEASE_BRANCH::${GITHUB_REF/refs\/heads\/release\//}
       - name: Push to release branch
-        if: startsWith(github.ref, 'refs/heads/release-')
+        if: startsWith(github.ref, 'refs/heads/release/')
         run: docker tag $DOCKER_IMAGE $DOCKER_IMAGE:$RELEASE_BRANCH && docker push $DOCKER_IMAGE:$RELEASE_BRANCH

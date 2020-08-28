@@ -78,7 +78,7 @@ nginx.ingress.kubernetes.io/auth-url: http://[jwt-auth-service-name].[jwt-auth-s
 nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Sub, X-Auth-Client-Id, X-Auth-Role, Authorization
 ```
 
-The first annotation tells your ingress where to find the authentication service. The second one tells it which headers to pass to your webservice. You have to whitelist which headers you want, separated by commas and spaces. If you add `Authorization` as a header, that header will be _removed_ from the request to your webservice. You can do this to make sure the webservice cannot see the token.
+The first annotation tells your ingress where to find the authentication service. The second one tells it which headers to pass to your webservice. You have to whitelist which headers you want, separated by commas and spaces. If you add `Authorization` here, that header will be _removed_ from the request to your webservice. You can do this to make sure no other authorization logic in your webservice kicks in, or to prevent unwanted dependencies on the token's internal structure.
 
 An example configuration for a webservice that simply echoes your request information can be found in `k8s/echo-example.yml`.
 

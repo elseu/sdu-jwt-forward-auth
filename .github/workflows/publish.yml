@@ -1,24 +1,23 @@
-name: Publish to Docker Hub
+name: Publish Docker image
 env:
-  DOCKER_IMAGE: elssdu/jwt-forward-auth
+  DOCKER_IMAGE: ghcr.io/elseu/sdu-jwt-forward-auth
 on:
   push:
     tags:
       - "v*"
     branches:
       - master
-      - "release/*"
+      - develop
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Log in with Docker Hub
-        run: echo "$DOCKER_PASSWORD" | docker login -u $DOCKER_USERNAME --password-stdin
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+
       - name: Build docker image
         run: docker build -t $DOCKER_IMAGE .
 
@@ -26,16 +25,23 @@ jobs:
         if: github.ref == 'refs/heads/master'
         run: docker tag $DOCKER_IMAGE $DOCKER_IMAGE:latest && docker push $DOCKER_IMAGE:latest
 
-      - name: Determine release tag
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: echo ::set-env name=RELEASE_TAG::${GITHUB_REF/refs\/tags\/v/}
-      - name: Push to release tag
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: docker tag $DOCKER_IMAGE $DOCKER_IMAGE:$RELEASE_TAG && docker push $DOCKER_IMAGE:$RELEASE_TAG
+      - name: Push to develop
+        if: github.ref == 'refs/heads/develop'
+        run: docker tag $DOCKER_IMAGE $DOCKER_IMAGE:next && docker push $DOCKER_IMAGE:next
 
-      - name: Determine release branch
-        if: startsWith(github.ref, 'refs/heads/release/')
-        run: echo ::set-env name=RELEASE_BRANCH::${GITHUB_REF/refs\/heads\/release\//}
-      - name: Push to release branch
-        if: startsWith(github.ref, 'refs/heads/release/')
-        run: docker tag $DOCKER_IMAGE $DOCKER_IMAGE:$RELEASE_BRANCH && docker push $DOCKER_IMAGE:$RELEASE_BRANCH
+      - name: Push to versions
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          VERSION_SUFFIX=$(echo ${GITHUB_REF/refs\/tags\/v/} | sed -E s/[^-]+//)
+          MAJOR_VERSION=$(echo ${GITHUB_REF/refs\/tags\/v/} | sed -E s/^\([0-9]+\).*$/\\1/ | sed -E s/-.*$//)
+          MINOR_VERSION=$(echo ${GITHUB_REF/refs\/tags\/v/} | sed -E s/^\([0-9]+\.[0-9]+\).*$/\\1/ | sed -E s/-.*$//)
+          FULL_VERSION=$(echo ${GITHUB_REF/refs\/tags\/v/} | sed -E s/^\([0-9]+\.[0-9]+\.[0-9]+\).*$/\\1/ | sed -E s/-.*$//)
+          if [ ! -z "$MAJOR_VERSION" ]; then
+            docker tag $DOCKER_IMAGE $DOCKER_IMAGE:$MAJOR_VERSION$VERSION_SUFFIX && docker push $DOCKER_IMAGE:$MAJOR_VERSION$VERSION_SUFFIX
+          fi
+          if [ ! -z "$MINOR_VERSION" ]; then
+            docker tag $DOCKER_IMAGE $DOCKER_IMAGE:$MINOR_VERSION$VERSION_SUFFIX && docker push $DOCKER_IMAGE:$MINOR_VERSION$VERSION_SUFFIX
+          fi
+          if [ ! -z "$FULL_VERSION" ]; then
+            docker tag $DOCKER_IMAGE $DOCKER_IMAGE:$FULL_VERSION$VERSION_SUFFIX && docker push $DOCKER_IMAGE:$FULL_VERSION$VERSION_SUFFIX
+          fi

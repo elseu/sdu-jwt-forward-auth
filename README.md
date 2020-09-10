@@ -21,14 +21,14 @@ X-Auth-Iat: ...
 
 ## Table of Contents <!-- omit in toc -->
 
-- [Background](#background)
-- [Install](#install)
-  - [For development](#for-development)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [Maintainers](#maintainers)
-- [Contributing](#contributing)
-- [License](#license)
+-   [Background](#background)
+-   [Install](#install)
+    -   [For development](#for-development)
+-   [Usage](#usage)
+-   [Configuration](#configuration)
+-   [Maintainers](#maintainers)
+-   [Contributing](#contributing)
+-   [License](#license)
 
 ## Background
 
@@ -43,7 +43,7 @@ This requires that the backend services consume and validate access tokens in a 
 
 ## Install
 
-The best way to run this service is through Docker: `docker pull elssdu/jwt-forward-auth:latest`.
+The best way to run this service is through Docker: `docker pull ghcr.io/elseu/sdu-jwt-forward-auth:latest`.
 
 ### For development
 

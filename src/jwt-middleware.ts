@@ -1,16 +1,110 @@
-import fetch from "node-fetch";
+import { boolean } from "boolean";
+import * as jsonwebtoken from "jsonwebtoken";
+import { Middleware } from "koa";
 import * as jwt from "koa-jwt";
+import fetch from "node-fetch";
+
 import { jwksSecret } from "./jwks-secret";
-import { isTruthy } from "./util";
+import { wildcardMatcherFromEnv } from "./matcher";
 
 /**
- * Load the middleware to read and validate the JWT from the request.
+ * Generate dynamic middleware for multiple backend OIDC IDPs.
  */
-export async function loadJwtMiddleware(): Promise<jwt.Middleware> {
-    let jwksUri: string | undefined;
+export function dynamicJwtMiddleware(): Middleware {
+    const {
+        isMatch: issuerIsAllowed,
+        patterns: issuerPatterns,
+    } = wildcardMatcherFromEnv("ALLOWED_ISSUER");
 
-    if (process.env.DISCOVERY_URL) {
-        const discoveryUrl = process.env.DISCOVERY_URL;
+    console.log("Allowed issuers:", issuerPatterns);
+
+    // Set a maximum number of issuers to prevent a DoS where the process can run out of memory if it gets lots of tokens with different valid issuer URLs.
+    const maxIssuerCount = parseInt(process.env.MAX_ISSUER_COUNT ?? "50", 10);
+    console.log("Max number of issuers:", maxIssuerCount);
+
+    const requireToken = boolean(process.env.REQUIRE_TOKEN);
+    console.log("Require token: ", requireToken);
+
+    const algorithms = (process.env.JWT_ALGOS || "RS256,RS384,RS512").split(
+        ","
+    );
+    console.log("Algorithms:", algorithms.join(", "));
+
+    let requiredAudience: string | undefined;
+    if (process.env.REQUIRE_AUDIENCE) {
+        requiredAudience = process.env.REQUIRE_AUDIENCE;
+        console.log("Required audience:", requiredAudience);
+    }
+
+    const jwtMiddlewares: Record<string, jwt.Middleware> = {};
+
+    return async (ctx, next) => {
+        const authHeader = ctx.headers.authorization;
+        let token: null | string = null;
+        if (authHeader) {
+            const match = authHeader.match(/^Bearer[ ]+(.*)$/);
+            if (match) {
+                token = match[1];
+            }
+        }
+        if (token === null) {
+            // No token provided.
+            if (requireToken) {
+                ctx.throw(401);
+            } else {
+                await next();
+            }
+            return;
+        }
+
+        // We have a token. Check its issuer, then load the right middleware.
+        const tokenData = jsonwebtoken.decode(token);
+        if (!tokenData || typeof tokenData === "string") {
+            // Invalid token data.
+            ctx.throw(401);
+            return;
+        }
+
+        const issuer = tokenData.iss;
+
+        if (!issuer) {
+            // No issuer found.
+            ctx.throw(401);
+            return;
+        }
+
+        if (!issuerIsAllowed(issuer)) {
+            // Issuer is not allowed.
+            console.log("Invalid issuer: ", issuer);
+            ctx.throw(401);
+            return;
+        }
+
+        if (!jwtMiddlewares[issuer]) {
+            console.log("New issuer: ", issuer);
+            if (Object.keys(jwtMiddlewares).length > maxIssuerCount) {
+                console.error("Max issuer count exceeded: ", maxIssuerCount);
+                ctx.throw(500);
+                return;
+            }
+
+            try {
+                jwtMiddlewares[issuer] = await loadIssuerJwtMiddleware(issuer);
+            } catch (e) {
+                console.error(e);
+                ctx.throw(500);
+                return;
+            }
+        }
+
+        await jwtMiddlewares[issuer](ctx, next);
+    };
+
+    async function loadIssuerJwtMiddleware(
+        issuer: string
+    ): Promise<jwt.Middleware> {
+        const discoveryUrl =
+            issuer.replace(/\/+$/, "") + "/.well-known/openid-configuration";
         console.log("Discovery URL:", discoveryUrl);
         const discoveryData = await (await fetch(discoveryUrl)).json();
         if (!discoveryData || !discoveryData.jwks_uri) {
@@ -18,45 +112,29 @@ export async function loadJwtMiddleware(): Promise<jwt.Middleware> {
                 `No jwks_uri found in discovery document at ${discoveryUrl}`
             );
         }
-        jwksUri = discoveryData.jwks_uri;
-    } else if (process.env.JWKS_URL) {
-        jwksUri = process.env.JWKS_URL;
-    }
+        const jwksUri: string | undefined = discoveryData.jwks_uri;
 
-    if (!jwksUri) {
-        throw new Error("No JWKS_URL or DISCOVERY_URL set.");
-    }
-    console.log("JWKS URL:", jwksUri);
+        if (!jwksUri) {
+            throw new Error(`No JWKS URI found for issuer" ${issuer}`);
+        }
+        console.log("JWKS URL:", jwksUri);
 
-    const algorithms = (process.env.JWT_ALGOS || "RS256,RS384,RS512").split(
-        ","
-    );
-    console.log("Algorithms:", algorithms.join(", "));
-
-    const jwtOptions: Partial<jwt.Options> = {
-        secret: jwksSecret({
-            strictSsl: true,
-            cache: true,
-            rateLimit: true,
-            jwksRequestsPerMinute: 1,
-            jwksUri,
+        const jwtOptions: Partial<jwt.Options> = {
+            secret: jwksSecret({
+                strictSsl: true,
+                cache: true,
+                rateLimit: true,
+                jwksRequestsPerMinute: 1,
+                jwksUri,
+                algorithms,
+            }),
             algorithms,
-        }),
-        algorithms,
-    };
+        };
 
-    if (process.env.REQUIRE_AUDIENCE) {
-        jwtOptions.audience = process.env.REQUIRE_AUDIENCE;
-        console.log("Audience:", jwtOptions.audience);
+        if (requiredAudience) {
+            jwtOptions.audience = requiredAudience;
+        }
+
+        return jwt(jwtOptions as jwt.Options);
     }
-
-    if (process.env.REQUIRE_ISSUER) {
-        jwtOptions.issuer = process.env.REQUIRE_ISSUER;
-        console.log("Issuer:", jwtOptions.issuer);
-    }
-
-    jwtOptions.passthrough = !isTruthy(process.env.REQUIRE_TOKEN);
-    console.log("Require token:", jwtOptions.passthrough ? "no" : "yes");
-
-    return jwt(jwtOptions as jwt.Options);
 }

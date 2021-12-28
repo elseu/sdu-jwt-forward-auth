@@ -14,12 +14,15 @@
   "author": "Sebastiaan Besselsen <s.besselsen@sdu.nl>",
   "license": "MIT",
   "dependencies": {
+    "boolean": "^3.1.4",
     "dotenv": "^8.2.0",
+    "jsonwebtoken": "^8.5.1",
     "jwks-rsa": "^1.12.3",
     "koa": "^2.13.1",
     "koa-jwt": "^4.0.0",
     "koa-logger": "^3.2.1",
     "koa-router": "^9.4.0",
+    "match-url-wildcard": "0.0.4",
     "node-fetch": "^2.6.1"
   },
   "devDependencies": {

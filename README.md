@@ -1,4 +1,4 @@
-# JWT Forward Auth
+# JWT Forward Auth 2
 
 > Protect your ingress with Json Web Tokens
 
@@ -21,6 +21,7 @@ X-Auth-Iat: ...
 
 ## Table of Contents <!-- omit in toc -->
 
+- [Versioning](#versioning)
 - [Background](#background)
 - [Install](#install)
   - [For development](#for-development)
@@ -29,6 +30,10 @@ X-Auth-Iat: ...
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
 - [License](#license)
+
+## Versioning
+
+This documentation applies to _version 2.x_ of JWT Forward Auth. You can also look at the [documentation for version 1.x](https://github.com/elseu/sdu-jwt-forward-auth/tree/v1.0.3).
 
 ## Background
 

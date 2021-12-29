@@ -1,4 +1,4 @@
-# JWT Forward Auth
+# JWT Forward Auth 2
 
 > Protect your ingress with Json Web Tokens
 
@@ -21,14 +21,19 @@ X-Auth-Iat: ...
 
 ## Table of Contents <!-- omit in toc -->
 
--   [Background](#background)
--   [Install](#install)
-    -   [For development](#for-development)
--   [Usage](#usage)
--   [Configuration](#configuration)
--   [Maintainers](#maintainers)
--   [Contributing](#contributing)
--   [License](#license)
+- [Versioning](#versioning)
+- [Background](#background)
+- [Install](#install)
+  - [For development](#for-development)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Maintainers](#maintainers)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Versioning
+
+This documentation applies to _version 2.x_ of JWT Forward Auth. You can also look at the [documentation for version 1.x](https://github.com/elseu/sdu-jwt-forward-auth/tree/v1.0.3).
 
 ## Background
 
@@ -59,7 +64,7 @@ npm run start # to run in normal mode
 
 This component can be run as a Kubernetes ingress external authentication provider: the ingress sends the request headers to JWT Forward Auth, which checks the JWT and sends back new headers, and the ingress then includes those in the request to your webservice.
 
-In both cases, JWT Forward Auth will unpack a JWT bearer token in the `Authorization:` header and validate its signature against the JWKS endpoint of the OIDC identity provider. Then:
+In both cases, JWT Forward Auth will unpack a JWT bearer token in the `Authorization:` header and validate its signature against the JWKS endpoint of the associated OIDC identity provider. Then:
 
 -   If the token is valid, its claims are unpacked and sent to your backend in headers. The `sub` token becomes the `X-Auth-Sub` header, `client_id` becomes `X-Auth-Client-Id`, etc. If a claim contains an array, its values will be put in the header in comma-separated format.
 -   If the token is invalid (invalid signature, expired) a `401 Authentication Required` response will be sent to the client and your webservice will not be called.
@@ -86,17 +91,16 @@ An example configuration for a webservice that simply echoes your request inform
 
 You can configure the services through these environment variables:
 
-| Variable           | Usage                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `JWKS_URL`         | URL for a JWKS endpoint where keys can be found to validate the JWT against.                                                                                                                                                                                                                                                                                                                                                                                               |
-| `DISCOVERY_URL`    | As an alternative to passing a fixed `JWKS_URL`, if your JWT is issued by an OpenID Connect identity provider, you can pass its .well-known/openid-configuration URL here. The `jwks_uri` will be read from the discovery URL.                                                                                                                                                                                                                                             |
-| `JWT_ALGOS`        | A comma-separated list of JWT algorithms that should be accepted. Make sure these are only asymmetric key algorithms! The default is `RS256,RS384,RS512`, which is good for all RSA-based crypto. (Elliptic curves being the only reasonable alternative, if you know what you are doing.)                                                                                                                                                                                 |
-| `REQUIRE_AUDIENCE` | If set, requires the `aud` claim in the token to equal the value of this variable and rejects the token otherwise.                                                                                                                                                                                                                                                                                                                                                         |
-| `REQUIRE_ISSUER`   | If set, requires the `iss` claim in the token to equal the value of this variable and rejects the token otherwise.                                                                                                                                                                                                                                                                                                                                                         |
-| `REQUIRE_TOKEN`    | If set to `true` or `1`, only allows requests to go to the backend ingress if they have a valid JWT bearer token in the `Authorization` header. By default requests without a bearer token in the `Authorization` header _are_ passed to the ingress (without any `X-Auth-` headers of course); the ingress can then decide to provide an anonymous version of its API. Note that regardless what you set here, an invalid or expired JWT **always** leads to a 401 error. |
-| `HEADER_PREFIX`    | Prefix to use for authorization header names. Defaults to `X-Auth-`.                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `LOG_REQUESTS`     | If set to `true` or `1`, all HTTP requests are logged to stdout.                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `PORT`             | Port number to run the service on. Defaults to `3000`. The the Docker image sets this to `80` by default.                                                                                                                                                                                                                                                                                                                                                                  |
+| Variable           | Usage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ALLOWED_ISSUER`   | URL of the issuer whose tokens the component should accept. This can use wildcards, e.g. `https://*.sdu.nl`. The pattern is not strict, so `https://login.sdu.nl:8080/some/path` will also match the example pattern. For more information about the pattern matching, check the [documentation ](https://www.npmjs.com/package/match-url-wildcard). You can add multiple patterns with this env variable by passing `ALLOWED_ISSUER_0`, `ALLOWED_ISSUER_1`, etc. Each of these issuers will be allowed. **Warning**: if you set this too broadly, for example `https://*`, an attacker could create their own issuer and create their own tokens to access your service, so be careful. |
+| `JWT_ALGOS`        | A comma-separated list of JWT algorithms that should be accepted. Make sure these are only asymmetric key algorithms! The default is `RS256,RS384,RS512`, which is good for all RSA-based crypto. (Elliptic curves being the only reasonable alternative, if you know what you are doing.)                                                                                                                                                                                                                                                                                                                                                                                               |
+| `REQUIRE_AUDIENCE` | If set, requires the `aud` claim in the token to equal the value of this variable and rejects the token otherwise.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `MAX_ISSUER_COUNT` | Maximum number of issuers this component will accept. As tokens from multiple issuers come in, this component will load their OIDC metadata and keep it in memory. This could allow an attacker to create tokens from many different issuers and overflow the memory of the component. This value keeps the max number of issuers below a certain threshold; if this number is reached and tokens from additional issuers come in, they will be rejected with an error 500. Defaults to a nice and high value of `50`.                                                                                                                                                                   |
+| `REQUIRE_TOKEN`    | If set to `true` or `1`, only allows requests to go to the backend ingress if they have a valid JWT bearer token in the `Authorization` header. By default requests without a bearer token in the `Authorization` header _are_ passed to the ingress (without any `X-Auth-` headers of course); the ingress can then decide to provide an anonymous version of its API. Note that regardless what you set here, an invalid or expired JWT **always** leads to a 401 error.                                                                                                                                                                                                               |
+| `HEADER_PREFIX`    | Prefix to use for authorization header names. Defaults to `X-Auth-`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `LOG_REQUESTS`     | If set to `true` or `1`, all HTTP requests are logged to stdout.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `PORT`             | Port number to run the service on. Defaults to `3000`. The the Docker image sets this to `80` by default.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ## Maintainers
 
@@ -110,7 +114,7 @@ Please create a branch named `feature/X` or `bugfix/X` from `master`. When you a
 
 Licensed under the MIT License.
 
-Copyright 2020 Sdu Uitgevers.
+Copyright 2020-2022 Sdu.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

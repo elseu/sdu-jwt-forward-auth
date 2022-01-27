@@ -17,14 +17,13 @@ const router = new Router();
 (async () => {
     console.group("💥 Initializing...");
 
-    app.use(dynamicJwtMiddleware());
-
     const headerPrefix = process.env.HEADER_PREFIX ?? "X-Auth-";
     console.log("Header prefix:", headerPrefix);
 
     // Main authentication route.
     router.get(
         "/",
+        dynamicJwtMiddleware(),
         (ctx: Koa.ParameterizedContext<{ user: TokenData | undefined }>) => {
             ctx.body = "";
             if (ctx.state.user) {

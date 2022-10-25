@@ -18,6 +18,13 @@ export function dynamicJwtMiddleware(): Middleware {
 
     console.log("Allowed issuers:", issuerPatterns);
 
+    const defaultIssuer = process.env.DEFAULT_ISSUER
+        ? process.env.DEFAULT_ISSUER
+        : undefined;
+    if (defaultIssuer) {
+        console.log("Default issuer:", defaultIssuer);
+    }
+
     // Set a maximum number of issuers to prevent a DoS where the process can run out of memory if it gets lots of tokens with different valid issuer URLs.
     const maxIssuerCount = parseInt(process.env.MAX_ISSUER_COUNT ?? "50", 10);
     console.log("Max number of issuers:", maxIssuerCount);
@@ -65,7 +72,7 @@ export function dynamicJwtMiddleware(): Middleware {
             return;
         }
 
-        const issuer = tokenData.iss;
+        const issuer = tokenData.iss ?? defaultIssuer;
 
         if (!issuer) {
             // No issuer found.

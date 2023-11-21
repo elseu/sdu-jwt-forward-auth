@@ -25,8 +25,6 @@ export function tokenToHeaders(
     }
     processObject(options.headerPrefix, data);
 
-    console.log("output", output);
-
     return output;
 }
 

@@ -20,7 +20,7 @@ jobs:
         run: echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
       - name: Build docker image
-        run: docker build -t $DOCKER_IMAGE .
+        run: docker build -t $DOCKER_IMAGE . --build-arg NPM_TOKEN=${{ secrets.SDU_READ_PACKAGES_GH_PAT }}
 
       - name: Push to latest
         if: github.ref == 'refs/heads/master'

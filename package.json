@@ -23,7 +23,8 @@
     "koa-logger": "^3.2.1",
     "koa-router": "^9.4.0",
     "match-url-wildcard": "0.0.4",
-    "node-fetch": "^2.6.1"
+    "node-fetch": "^2.6.1",
+    "transliteration": "^2.3.5"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^8.5.0",

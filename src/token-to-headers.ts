@@ -1,3 +1,5 @@
+import { transliterate } from "transliteration";
+
 interface TokenToHeadersOptions {
     headerPrefix: string;
 }
@@ -11,6 +13,7 @@ export function tokenToHeaders(
         Object.entries(obj).forEach(([k, v]) => {
             const formattedKey = formatKey(k);
             const formattedValue = formatSimpleValue(v);
+
             if (formattedValue === null) {
                 if (isObject(v)) {
                     processObject(prefix + formattedKey + ".", v);
@@ -21,6 +24,9 @@ export function tokenToHeaders(
         });
     }
     processObject(options.headerPrefix, data);
+
+    console.log("output", output);
+
     return output;
 }
 
@@ -40,7 +46,7 @@ function formatSimpleValue(value: unknown): string | null {
         typeof value === "number" ||
         typeof value === "boolean"
     ) {
-        return value.toString();
+        return transliterate(value.toString());
     }
     if (Array.isArray(value)) {
         return value

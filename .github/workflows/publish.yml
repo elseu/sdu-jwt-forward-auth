@@ -4,10 +4,11 @@ env:
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
     branches:
       - master
       - develop
+      - next
 jobs:
   build-and-push:
     runs-on: ubuntu-latest

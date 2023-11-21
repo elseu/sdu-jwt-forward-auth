@@ -1,9 +1,9 @@
 import * as Sentry from '@sentry/node';
 import { boolean } from 'boolean';
-import * as dotenv from 'dotenv';
-import * as Koa from 'koa';
-import * as logger from 'koa-logger';
-import * as Router from 'koa-router';
+import dotenv from 'dotenv';
+import Koa from 'koa';
+import logger from 'koa-logger';
+import Router from 'koa-router';
 
 import { dynamicJwtMiddleware } from './jwt-middleware';
 import { tokenToHeaders } from './token-to-headers';

@@ -1,8 +1,8 @@
 import { boolean } from 'boolean';
-import * as jsonwebtoken from 'jsonwebtoken';
+import jsonwebtoken from 'jsonwebtoken';
 import { Middleware } from 'koa';
-import * as jwt from 'koa-jwt';
-import fetch from 'node-fetch';
+import jwt from 'koa-jwt';
+import axios from 'axios';
 
 import { jwksSecret } from './jwks-secret';
 import { wildcardMatcherFromEnv } from './matcher';
@@ -104,11 +104,11 @@ export function dynamicJwtMiddleware(): Middleware {
   async function loadIssuerJwtMiddleware(issuer: string): Promise<jwt.Middleware> {
     const discoveryUrl = issuer.replace(/\/+$/, '') + '/.well-known/openid-configuration';
     console.log('Discovery URL:', discoveryUrl);
-    const discoveryData: any = await (await fetch(discoveryUrl)).json();
-    if (!discoveryData || !discoveryData.jwks_uri) {
+    const discoveryData = await axios(discoveryUrl);
+    if (!discoveryData.data || !discoveryData.data.jwks_uri) {
       throw new Error(`No jwks_uri found in discovery document at ${discoveryUrl}`);
     }
-    const jwksUri: string | undefined = discoveryData.jwks_uri;
+    const jwksUri: string | undefined = discoveryData.data.jwks_uri;
 
     if (!jwksUri) {
       throw new Error(`No JWKS URI found for issuer" ${issuer}`);

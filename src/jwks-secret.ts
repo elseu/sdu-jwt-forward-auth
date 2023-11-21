@@ -1,4 +1,4 @@
-import * as jwksClient from 'jwks-rsa';
+import jwksClient from 'jwks-rsa';
 import { promisify } from 'util';
 
 interface JwksSecretOptions {

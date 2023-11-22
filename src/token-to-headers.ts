@@ -22,10 +22,10 @@ export function tokenToHeaders(
         output[prefix + formattedKey] = formattedValue;
       }
     });
-
-    console.log({ output });
   }
   processObject(options.headerPrefix, data);
+
+  console.log({ output });
 
   return output;
 }

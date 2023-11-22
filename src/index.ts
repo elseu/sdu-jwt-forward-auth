@@ -20,7 +20,7 @@ const app = new Koa();
 const router = new Router();
 
 (async () => {
-  console.group('💥 Initializing...');
+  console.group('💥 Initializing... 🚀');
 
   const headerPrefix = process.env.HEADER_PREFIX ?? 'X-Auth-';
   console.log('Header prefix:', headerPrefix);

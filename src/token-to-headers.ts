@@ -14,16 +14,16 @@ export function tokenToHeaders(
       const formattedKey = formatKey(k);
       let formattedValue = formatSimpleValue(v);
 
-      // remove special characters from sn and cn
-      if (['sn', 'cn'].includes(formattedKey.toLowerCase())) {
-        formattedValue = transliterate(formattedValue);
-      }
-
       if (formattedValue === null) {
         if (isObject(v)) {
           processObject(`${prefix + formattedKey}.`, v);
         }
       } else {
+        // remove special characters from sn and cn
+        if (['sn', 'cn'].includes(formattedKey.toLowerCase())) {
+          formattedValue = transliterate(formattedValue);
+        }
+
         output[prefix + formattedKey] = formattedValue;
       }
     });

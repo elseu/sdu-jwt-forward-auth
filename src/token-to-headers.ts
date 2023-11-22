@@ -1,3 +1,5 @@
+import { transliterate } from "transliteration";
+
 interface TokenToHeadersOptions {
     headerPrefix: string;
 }
@@ -10,12 +12,18 @@ export function tokenToHeaders(
     function processObject(prefix: string, obj: Record<string, unknown>) {
         Object.entries(obj).forEach(([k, v]) => {
             const formattedKey = formatKey(k);
-            const formattedValue = formatSimpleValue(v);
+            let formattedValue = formatSimpleValue(v);
+
             if (formattedValue === null) {
                 if (isObject(v)) {
                     processObject(prefix + formattedKey + ".", v);
                 }
             } else {
+                // remove special characters from sn and cn
+                if (["sn", "cn"].includes(formattedKey.toLowerCase())) {
+                    formattedValue = transliterate(formattedValue);
+                }
+
                 output[prefix + formattedKey] = formattedValue;
             }
         });

@@ -12,7 +12,12 @@ export function tokenToHeaders(
   function processObject(prefix: string, obj: Record<string, unknown>) {
     Object.entries(obj).forEach(([k, v]) => {
       const formattedKey = formatKey(k);
-      const formattedValue = formatSimpleValue(v);
+      let formattedValue = formatSimpleValue(v);
+
+      // remove special characters from sn and cn
+      if (['sn', 'cn'].includes(formattedKey.toLowerCase())) {
+        formattedValue = transliterate(formattedValue);
+      }
 
       if (formattedValue === null) {
         if (isObject(v)) {
@@ -24,8 +29,6 @@ export function tokenToHeaders(
     });
   }
   processObject(options.headerPrefix, data);
-
-  console.log({ output });
 
   return output;
 }
@@ -42,7 +45,7 @@ function formatSimpleValue(value: unknown): string | null {
     return '';
   }
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return transliterate(value.toString());
+    return value.toString();
   }
   if (Array.isArray(value)) {
     return value

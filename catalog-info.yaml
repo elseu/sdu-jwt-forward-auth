@@ -1,0 +1,15 @@
+apiVersion: backstage.io/v1beta1
+kind: Component
+metadata:
+  name: sdu-jwt-forward-auth
+  description: "Protect your ingress with Json Web Tokens"
+  annotations:
+    github.com/project-slug: elseu/sdu-jwt-forward-auth
+    backstage.io/source-location: url:https://github.com/elseu/sdu-jwt-forward-auth/
+  tags:
+    - typescript
+    - critical-component
+spec:
+  type: unspecified
+  owner: team-auth-onboarding
+  lifecycle: unspecified

@@ -18,6 +18,8 @@ export function dynamicJwtMiddleware(): Middleware<{
     console.log('Required audience:', REQUIRE_AUDIENCE);
   }
 
+  const jwtMiddlewares: Record<string, jwt.Middleware> = {};
+
   return async (ctx, next) => {
     const { issuer } = ctx.state;
 
@@ -25,21 +27,25 @@ export function dynamicJwtMiddleware(): Middleware<{
       await next();
     }
 
-    const jwtOptions: Partial<jwt.Options> = {
-      secret: jwksSecret({
-        cache: true,
-        rateLimit: true,
-        jwksRequestsPerMinute: 1,
-        jwksUri: issuer.metadata.jwks_uri,
+    if (!jwtMiddlewares[issuer.metadata.issuer]) {
+      const jwtOptions: Partial<jwt.Options> = {
+        secret: jwksSecret({
+          cache: true,
+          rateLimit: true,
+          jwksRequestsPerMinute: 1,
+          jwksUri: issuer.metadata.jwks_uri,
+          algorithms: JWT_ALGOS,
+        }),
         algorithms: JWT_ALGOS,
-      }),
-      algorithms: JWT_ALGOS,
-    };
+      };
 
-    if (REQUIRE_AUDIENCE) {
-      jwtOptions.audience = REQUIRE_AUDIENCE;
+      if (REQUIRE_AUDIENCE) {
+        jwtOptions.audience = REQUIRE_AUDIENCE;
+      }
+
+      jwtMiddlewares[issuer.metadata.issuer] = jwt(jwtOptions as jwt.Options);
     }
 
-    await jwt(jwtOptions as jwt.Options)(ctx, next);
+    await jwtMiddlewares[issuer.metadata.issuer](ctx, next);
   };
 }

@@ -35,7 +35,6 @@ const router = new Router();
     dynamicJwtMiddleware(),
     (ctx: Koa.ParameterizedContext<{ user: TokenData | undefined }>) => {
       ctx.body = '';
-      console.log('hello');
       if (ctx.state.user) {
         ctx.set(tokenToHeaders(ctx.state.user, { headerPrefix: HEADER_PREFIX }));
       }

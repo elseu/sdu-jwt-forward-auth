@@ -2,10 +2,11 @@ import { boolean } from 'boolean';
 import jsonwebtoken from 'jsonwebtoken';
 import { Middleware } from 'koa';
 import jwt from 'koa-jwt';
-import axios from 'axios';
 
 import { jwksSecret } from './jwks-secret';
 import { wildcardMatcherFromEnv } from './matcher';
+import { getTokenFromContext } from './utils/getTokenFromContext';
+import { loadDiscoveryData } from './utils/loadDiscoveryData';
 
 /**
  * Generate dynamic middleware for multiple backend OIDC IDPs.
@@ -40,14 +41,8 @@ export function dynamicJwtMiddleware(): Middleware {
   const jwtMiddlewares: Record<string, jwt.Middleware> = {};
 
   return async (ctx, next) => {
-    const authHeader = ctx.headers.authorization;
-    let token: null | string = null;
-    if (authHeader) {
-      const match = authHeader.match(/^Bearer[ ]+(.*)$/);
-      if (match) {
-        token = match[1];
-      }
-    }
+    let token = getTokenFromContext(ctx);
+
     if (token === null) {
       // No token provided.
       if (requireToken) {
@@ -102,12 +97,7 @@ export function dynamicJwtMiddleware(): Middleware {
   };
 
   async function loadIssuerJwtMiddleware(issuer: string): Promise<jwt.Middleware> {
-    const discoveryUrl = issuer.replace(/\/+$/, '') + '/.well-known/openid-configuration';
-    console.log('Discovery URL:', discoveryUrl);
-    const discoveryData = await axios(discoveryUrl);
-    if (!discoveryData.data || !discoveryData.data.jwks_uri) {
-      throw new Error(`No jwks_uri found in discovery document at ${discoveryUrl}`);
-    }
+    const discoveryData = await loadDiscoveryData(issuer);
     const jwksUri: string | undefined = discoveryData.data.jwks_uri;
 
     if (!jwksUri) {

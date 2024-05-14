@@ -7,6 +7,10 @@ import Router from 'koa-router';
 
 import { dynamicJwtMiddleware } from './jwt-middleware';
 import { tokenToHeaders } from './token-to-headers';
+import { loadDiscoveryData } from './utils/loadDiscoveryData';
+import axios from 'axios';
+import { getKVEsFromUserinfo } from './utils/getKVEsFromUserinfo';
+import { getTokenFromContext } from './utils/getTokenFromContext';
 
 type TokenData = Record<string, unknown>;
 
@@ -29,9 +33,22 @@ const router = new Router();
   router.get(
     '/',
     dynamicJwtMiddleware(),
-    (ctx: Koa.ParameterizedContext<{ user: TokenData | undefined }>) => {
+    async (ctx: Koa.ParameterizedContext<{ user: TokenData | undefined }>) => {
       ctx.body = '';
       if (ctx.state.user) {
+        if (boolean(process.env.KVE_HEADER)) {
+          const discoveryData = await loadDiscoveryData(ctx.state.user.iss as string);
+          const token = getTokenFromContext(ctx);
+          const userInfoResponse = await axios(discoveryData.userinfo_endpoint, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          // get kves from userinfo and append them to user
+          ctx.state.user.kve = getKVEsFromUserinfo(userInfoResponse.data);
+        }
+
         ctx.set(tokenToHeaders(ctx.state.user, { headerPrefix }));
       }
       ctx.set('Authorization', '');

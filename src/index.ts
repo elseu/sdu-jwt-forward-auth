@@ -63,8 +63,9 @@ const router = new Router();
       if (!issuer) {
         ctx.throw(401, 'Issuer not found');
       }
+
       try {
-        return await getUserInfo({ url: ctx.state.issuer.metadata.userinfo_endpoint, token });
+        return await getUserInfo({ url: issuer.metadata.userinfo_endpoint, token });
       } catch (error) {
         console.error(error);
         ctx.throw(401, 'User info call failed');

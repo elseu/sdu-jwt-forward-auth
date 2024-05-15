@@ -25,6 +25,7 @@ export function dynamicJwtMiddleware(): Middleware<{
 
     if (!issuer) {
       await next();
+      return;
     }
 
     if (!jwtMiddlewares[issuer.metadata.issuer]) {

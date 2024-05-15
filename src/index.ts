@@ -41,9 +41,6 @@ const router = new Router();
 
       if (user) {
         ctx.set(tokenToHeaders(user, { headerPrefix: HEADER_PREFIX }));
-      }
-
-      if (token) {
         const encodedToken = encodeURIComponent(Buffer.from(token).toString('base64'));
         ctx.set(`${HEADER_PREFIX}User-Info-Url`, `${ctx.origin}/userinfo/${encodedToken}`);
       }

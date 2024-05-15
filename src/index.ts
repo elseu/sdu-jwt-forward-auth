@@ -1,16 +1,15 @@
 import * as Sentry from '@sentry/node';
-import { boolean } from 'boolean';
-import dotenv from 'dotenv';
 import Koa from 'koa';
 import logger from 'koa-logger';
 import Router from 'koa-router';
 
-import { dynamicJwtMiddleware } from './jwt-middleware';
+import { dynamicJwtMiddleware } from './middleware/jwt.middleware';
 import { tokenToHeaders } from './token-to-headers';
+import { tokenMiddleware } from './middleware/token.middleware';
+import { issuerMiddleware } from './middleware/issuer.middleware';
+import { HEADER_PREFIX, LOG_REQUESTS, PORT } from './constants';
 
 type TokenData = Record<string, unknown>;
-
-dotenv.config();
 
 Sentry.init({
   dsn: 'https://4146529fca2048ca8e903740153a39f1@sentry.awssdu.nl/78',
@@ -22,17 +21,22 @@ const router = new Router();
 (async () => {
   console.group('💥 Initializing... 🚀');
 
-  const headerPrefix = process.env.HEADER_PREFIX ?? 'X-Auth-';
-  console.log('Header prefix:', headerPrefix);
+  console.log('Header prefix:', HEADER_PREFIX);
+
+  if (LOG_REQUESTS) {
+    app.use(logger());
+  }
 
   // Main authentication route.
   router.get(
     '/',
+    tokenMiddleware(),
+    issuerMiddleware(),
     dynamicJwtMiddleware(),
     (ctx: Koa.ParameterizedContext<{ user: TokenData | undefined }>) => {
       ctx.body = '';
       if (ctx.state.user) {
-        ctx.set(tokenToHeaders(ctx.state.user, { headerPrefix }));
+        ctx.set(tokenToHeaders(ctx.state.user, { headerPrefix: HEADER_PREFIX }));
       }
       ctx.set('Authorization', '');
     },
@@ -43,9 +47,6 @@ const router = new Router();
     ctx.body = 'OK';
   });
 
-  if (boolean(process.env.LOG_REQUESTS)) {
-    app.use(logger());
-  }
   app.use(router.middleware());
 
   app.on('error', (err, ctx) => {
@@ -55,11 +56,9 @@ const router = new Router();
     });
   });
 
-  const port = parseInt(process.env.PORT ?? '3000');
-
   console.groupEnd();
 
-  app.listen(port, () => {
-    console.log(`🚀 Listening on ${port}`);
+  app.listen(PORT, () => {
+    console.log(`🚀 Listening on ${PORT}`);
   });
 })();

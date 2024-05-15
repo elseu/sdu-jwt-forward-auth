@@ -51,16 +51,17 @@ const router = new Router();
 
   router.get(
     '/userinfo/:encodedToken',
-    async (ctx: Koa.ParameterizedContext<{ token: string; issuer: Issuer }>, next) => {
+    async (ctx: Koa.ParameterizedContext<{ token: string }>, next) => {
       const encodedToken = ctx.params.encodedToken;
       const token = Buffer.from(encodedToken, 'base64').toString('utf-8');
       ctx.state.token = token;
+      await next();
+    },
+    issuerMiddleware(),
+    async (ctx: Koa.ParameterizedContext<{ issuer: Issuer; token: string }>, next) => {
+      const { issuer, token } = ctx.state;
 
-      console.log({ token });
-
-      await issuerMiddleware()(ctx, next);
-
-      const { issuer } = ctx.state;
+      console.log(issuer);
 
       if (!issuer) {
         ctx.throw(401, 'Issuer not found');

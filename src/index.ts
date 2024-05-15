@@ -56,6 +56,8 @@ const router = new Router();
       const token = Buffer.from(encodedToken, 'base64').toString('utf-8');
       ctx.state.token = token;
 
+      console.log({ token });
+
       await issuerMiddleware()(ctx, next);
 
       const { issuer } = ctx.state;
@@ -64,12 +66,7 @@ const router = new Router();
         ctx.throw(401, 'Issuer not found');
       }
 
-      try {
-        return await getUserInfo({ url: issuer.metadata.userinfo_endpoint, token });
-      } catch (error) {
-        console.error(error);
-        ctx.throw(401, 'User info call failed');
-      }
+      return await getUserInfo({ url: issuer.metadata.userinfo_endpoint, token });
     },
   );
 

@@ -30,12 +30,6 @@ export async function getUserInfo({ url, token }: UserInfoRequest) {
 
   const ttl = tokenData.exp - Math.floor(Date.now() / 1000);
 
-  console.log({
-    ttl,
-    exp: tokenData.exp,
-    tokenData,
-  });
-
   // cache the userinfo for the length of the access token expiry
   userInfoCache.set(token, userInfoData.data, ttl);
 

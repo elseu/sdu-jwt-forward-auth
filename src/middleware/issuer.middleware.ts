@@ -26,6 +26,7 @@ export function issuerMiddleware(): Middleware<{
 
     if (!token) {
       await next();
+      return;
     }
 
     const tokenData = jsonwebtoken.decode(ctx.state.token);
@@ -48,6 +49,7 @@ export function issuerMiddleware(): Middleware<{
     if (issuers[issuerKey]) {
       ctx.state.issuer = issuers[issuerKey];
       await next();
+      return;
     }
 
     if (!issuerIsAllowed(issuerKey)) {

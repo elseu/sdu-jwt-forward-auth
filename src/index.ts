@@ -67,6 +67,8 @@ const router = new Router();
         ctx.throw(401, 'Issuer not found');
       }
 
+      console.log({ url: issuer.metadata.userinfo_endpoint, token });
+
       return await getUserInfo({ url: issuer.metadata.userinfo_endpoint, token });
     },
   );

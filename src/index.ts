@@ -61,15 +61,13 @@ const router = new Router();
     async (ctx: Koa.ParameterizedContext<{ issuer: Issuer; token: string }>, next) => {
       const { issuer, token } = ctx.state;
 
-      console.log(issuer);
-
       if (!issuer) {
         ctx.throw(401, 'Issuer not found');
       }
 
-      console.log({ url: issuer.metadata.userinfo_endpoint, token });
+      const userInfo = await getUserInfo({ url: issuer.metadata.userinfo_endpoint, token });
 
-      return await getUserInfo({ url: issuer.metadata.userinfo_endpoint, token });
+      ctx.body = userInfo;
     },
   );
 

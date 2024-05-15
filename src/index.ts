@@ -44,7 +44,8 @@ const router = new Router();
       }
 
       if (token) {
-        ctx.set(HEADER_PREFIX + 'User-Info-Url', ctx.origin + '/userinfo/' + token);
+        const encodedToken = encodeURIComponent(Buffer.from(token).toString('base64'));
+        ctx.set(`${HEADER_PREFIX}User-Info-Url`, `${ctx.origin}/userinfo/${encodedToken}`);
       }
 
       ctx.set('Authorization', '');
@@ -52,9 +53,10 @@ const router = new Router();
   );
 
   router.get(
-    '/userinfo/:token',
+    '/userinfo/:encodedToken',
     async (ctx: Koa.ParameterizedContext<{ token: string; issuer: Issuer }>, next) => {
-      const token = ctx.params.token;
+      const encodedToken = ctx.params.encodedToken;
+      const token = Buffer.from(encodedToken, 'base64').toString('utf-8');
       ctx.state.token = token;
 
       await issuerMiddleware()(ctx, next);
@@ -64,8 +66,12 @@ const router = new Router();
       if (!issuer) {
         ctx.throw(401, 'Issuer not found');
       }
-
-      return await getUserInfo({ url: ctx.state.issuer.metadata.userinfo_endpoint, token });
+      try {
+        return await getUserInfo({ url: ctx.state.issuer.metadata.userinfo_endpoint, token });
+      } catch (error) {
+        console.error(error);
+        ctx.throw(401, 'User info call failed');
+      }
     },
   );
 

@@ -8,6 +8,8 @@ import { tokenToHeaders } from './token-to-headers';
 import { tokenMiddleware } from './middleware/token.middleware';
 import { issuerMiddleware } from './middleware/issuer.middleware';
 import { HEADER_PREFIX, LOG_REQUESTS, PORT } from './constants';
+import { Issuer } from 'openid-client';
+import { getUserInfo } from './userInfo';
 
 type TokenData = Record<string, unknown>;
 
@@ -33,12 +35,37 @@ const router = new Router();
     tokenMiddleware(),
     issuerMiddleware(),
     dynamicJwtMiddleware(),
-    (ctx: Koa.ParameterizedContext<{ user: TokenData | undefined }>) => {
+    (ctx: Koa.ParameterizedContext<{ user: TokenData | undefined; token: string }>) => {
       ctx.body = '';
-      if (ctx.state.user) {
-        ctx.set(tokenToHeaders(ctx.state.user, { headerPrefix: HEADER_PREFIX }));
+      const { token, user } = ctx.state;
+
+      if (user) {
+        ctx.set(tokenToHeaders(user, { headerPrefix: HEADER_PREFIX }));
       }
+
+      if (token) {
+        ctx.set(HEADER_PREFIX + 'User-Info-Url', ctx.origin + '/userinfo/' + token);
+      }
+
       ctx.set('Authorization', '');
+    },
+  );
+
+  router.get(
+    '/userinfo/:token',
+    async (ctx: Koa.ParameterizedContext<{ token: string; issuer: Issuer }>, next) => {
+      const token = ctx.params.token;
+      ctx.state.token = token;
+
+      await issuerMiddleware()(ctx, next);
+
+      const { issuer } = ctx.state;
+
+      if (!issuer) {
+        ctx.throw(401, 'Issuer not found');
+      }
+
+      return await getUserInfo({ url: ctx.state.issuer.metadata.userinfo_endpoint, token });
     },
   );
 

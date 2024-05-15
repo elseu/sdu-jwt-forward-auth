@@ -4,6 +4,8 @@ import jsonwebtoken from 'jsonwebtoken';
 import { Middleware } from 'koa';
 import { Issuer } from 'openid-client';
 
+const issuers: Record<string, Issuer> = {};
+
 export function issuerMiddleware(): Middleware<{
   token: string | undefined;
   issuer: Issuer | undefined;
@@ -18,8 +20,6 @@ export function issuerMiddleware(): Middleware<{
   if (DEFAULT_ISSUER) {
     console.log('Default issuer:', DEFAULT_ISSUER);
   }
-
-  const issuers: Record<string, Issuer> = {};
 
   return async (ctx, next) => {
     const { token } = ctx.state;
@@ -44,6 +44,12 @@ export function issuerMiddleware(): Middleware<{
       return;
     }
 
+    // if issuer exist in the cache, use it
+    if (issuers[issuerKey]) {
+      ctx.state.issuer = issuers[issuerKey];
+      await next();
+    }
+
     if (!issuerIsAllowed(issuerKey)) {
       // Issuer is not allowed.
       console.log('Invalid issuer: ', issuerKey);
@@ -51,26 +57,22 @@ export function issuerMiddleware(): Middleware<{
       return;
     }
 
-    if (!issuers[issuerKey]) {
-      console.log('New issuer: ', issuerKey);
-      if (Object.keys(issuers).length > MAX_ISSUER_COUNT) {
-        console.error('Max issuer count exceeded: ', MAX_ISSUER_COUNT);
-        ctx.throw(500);
-        return;
-      }
-
-      const discoveryUrl = new URL('/.well-known/openid-configuration', issuerKey);
-      const issuer = await Issuer.discover(discoveryUrl.toString());
-
-      if (!issuer.metadata.jwks_uri) {
-        throw new Error(`No JWKS URI found for issuer" ${issuerKey}`);
-      }
-
-      issuers[issuerKey] = issuer;
+    console.log('New issuer: ', issuerKey);
+    if (Object.keys(issuers).length > MAX_ISSUER_COUNT) {
+      console.error('Max issuer count exceeded: ', MAX_ISSUER_COUNT);
+      ctx.throw(500);
+      return;
     }
 
-    ctx.state.issuer = issuers[issuerKey];
+    const discoveryUrl = new URL('/.well-known/openid-configuration', issuerKey);
+    const issuer = await Issuer.discover(discoveryUrl.toString());
 
+    if (!issuer.metadata.jwks_uri) {
+      throw new Error(`No JWKS URI found for issuer" ${issuerKey}`);
+    }
+
+    issuers[issuerKey] = issuer;
+    ctx.state.issuer = issuers[issuerKey];
     await next();
   };
 }

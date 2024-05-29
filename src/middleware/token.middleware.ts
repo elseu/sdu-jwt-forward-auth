@@ -1,3 +1,4 @@
+import { boolean } from 'boolean';
 import { REQUIRE_TOKEN } from '../constants';
 import { DefaultContext, Middleware } from 'koa';
 
@@ -19,13 +20,11 @@ export function tokenMiddleware(): Middleware<{ token: string | undefined }> {
   return async (ctx: DefaultContext, next: () => Promise<void>) => {
     const token = getTokenFromContext(ctx);
 
-    console.log(ctx);
-    console.log(ctx.headers);
-    console.log(ctx.query);
-
     ctx.state.token = token;
 
-    if (REQUIRE_TOKEN && !token) {
+    const isTokenRequired = REQUIRE_TOKEN || boolean(ctx.query.requireToken);
+
+    if (isTokenRequired && !token) {
       ctx.throw(401);
     }
 

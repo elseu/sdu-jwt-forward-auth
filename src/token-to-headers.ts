@@ -24,6 +24,10 @@ export function tokenToHeaders(
           formattedValue = transliterate(formattedValue);
         }
 
+        if (formattedKey.toLowerCase() === 'login' && !formattedValue.includes('@')) {
+          formattedValue = transliterate(formattedValue);
+        }
+
         output[prefix + formattedKey] = formattedValue;
       }
     });

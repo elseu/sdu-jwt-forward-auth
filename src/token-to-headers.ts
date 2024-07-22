@@ -13,14 +13,13 @@ export function tokenToHeaders(
     Object.entries(obj).forEach(([k, v]) => {
       const formattedKey = formatKey(k);
       let formattedValue = formatSimpleValue(v);
-
       if (formattedValue === null) {
         if (isObject(v)) {
           processObject(`${prefix + formattedKey}.`, v);
         }
       } else {
-        // remove special characters from sn and cn
-        if (['sn', 'cn'].includes(formattedKey.toLowerCase())) {
+        // remove special characters from sn, cn, givenName and login
+        if (['sn', 'cn', 'givenname', 'login'].includes(formattedKey.toLowerCase())) {
           formattedValue = transliterate(formattedValue);
         }
 

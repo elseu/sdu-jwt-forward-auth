@@ -25,7 +25,7 @@ export function tokenMiddleware(): Middleware<{ token: string | undefined }> {
     const isTokenRequired = REQUIRE_TOKEN || boolean(ctx.query.requireToken);
 
     if (isTokenRequired && !token) {
-      ctx.throw(401);
+      ctx.throw(401, 'Token is required');
     }
 
     await next();

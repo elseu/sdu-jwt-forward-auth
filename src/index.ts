@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node';
-import Koa from 'koa';
+import Koa, { HttpError } from 'koa';
 import logger from 'koa-logger';
 import Router from 'koa-router';
 
@@ -16,6 +16,22 @@ type TokenData = Record<string, unknown>;
 Sentry.init({
   dsn: 'https://4146529fca2048ca8e903740153a39f1@sentry.awssdu.nl/78',
   environment: ENVIRONMENT,
+  beforeSend(event, hint) {
+    const originalException = hint?.originalException;
+
+    // Check if the error is a Koa error with status 401
+    if (
+      originalException &&
+      originalException instanceof HttpError &&
+      originalException.status === 401
+    ) {
+      // If it's a 401 error, don't send it to Sentry
+      return null;
+    }
+
+    // Otherwise, send the event to Sentry
+    return event;
+  },
 });
 
 const app = new Koa();
@@ -82,6 +98,10 @@ Sentry.setupKoaErrorHandler(app);
   app.use(router.middleware());
 
   app.on('error', (err, ctx) => {
+    if (err instanceof HttpError && err.status === 401) {
+      return;
+    }
+
     console.error(err);
   });
 

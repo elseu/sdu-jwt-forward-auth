@@ -33,7 +33,7 @@ export function issuerMiddleware(): Middleware<{
 
     if (!tokenData || typeof tokenData === 'string') {
       // Invalid token data.
-      ctx.throw(401);
+      ctx.throw(401, 'Invalid token');
       return;
     }
 
@@ -41,7 +41,7 @@ export function issuerMiddleware(): Middleware<{
 
     if (!issuerKey) {
       // No issuer found.
-      ctx.throw(401);
+      ctx.throw(401, 'Invalid issuer');
       return;
     }
 
@@ -55,7 +55,7 @@ export function issuerMiddleware(): Middleware<{
     if (!issuerIsAllowed(issuerKey)) {
       // Issuer is not allowed.
       console.log('Invalid issuer: ', issuerKey);
-      ctx.throw(401);
+      ctx.throw(401, 'Issuer not allowed');
       return;
     }
 

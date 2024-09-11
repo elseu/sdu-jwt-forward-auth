@@ -7,7 +7,7 @@ import { dynamicJwtMiddleware } from './middleware/jwt.middleware';
 import { tokenToHeaders } from './token-to-headers';
 import { tokenMiddleware } from './middleware/token.middleware';
 import { issuerMiddleware } from './middleware/issuer.middleware';
-import { HEADER_PREFIX, LOG_REQUESTS, PORT } from './constants';
+import { ENVIRONMENT, HEADER_PREFIX, LOG_REQUESTS, PORT } from './constants';
 import { Issuer } from 'openid-client';
 import { getUserInfo } from './userInfo';
 
@@ -15,10 +15,13 @@ type TokenData = Record<string, unknown>;
 
 Sentry.init({
   dsn: 'https://4146529fca2048ca8e903740153a39f1@sentry.awssdu.nl/78',
+  environment: ENVIRONMENT,
 });
 
 const app = new Koa();
 const router = new Router();
+
+Sentry.setupKoaErrorHandler(app);
 
 (async () => {
   console.group('💥 Initializing... 🚀');
@@ -79,10 +82,7 @@ const router = new Router();
   app.use(router.middleware());
 
   app.on('error', (err, ctx) => {
-    Sentry.withScope((scope) => {
-      scope.setSDKProcessingMetadata({ request: ctx.request });
-      Sentry.captureException(err);
-    });
+    console.error(err);
   });
 
   console.groupEnd();

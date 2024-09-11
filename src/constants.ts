@@ -10,3 +10,4 @@ export const DEFAULT_ISSUER = process.env.DEFAULT_ISSUER ? process.env.DEFAULT_I
 export const JWT_ALGOS = (process.env.JWT_ALGOS || 'RS256,RS384,RS512').split(',');
 export const REQUIRE_AUDIENCE = process.env.REQUIRE_AUDIENCE;
 export const REQUIRE_TOKEN = boolean(process.env.REQUIRE_TOKEN);
+export const ENVIRONMENT = process.env.ENVIRONMENT;

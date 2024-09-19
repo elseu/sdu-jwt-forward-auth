@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1beta1
+kind: Component
+metadata:
+  name: sdu-jwt-forward-auth
+  description: 'Proxy component that validates JWT tokens and forwards values as HTTP headers'
+  annotations:
+    github.com/project-slug: elseu/sdu-jwt-forward-auth
+    backstage.io/source-location: url:https://github.com/elseu/sdu-jwt-forward-auth
+  tags:
+    - typescript
+spec:
+  type: service
+  owner: team-auth-onboarding
+  lifecycle: production

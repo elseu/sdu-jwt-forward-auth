@@ -59,34 +59,12 @@ Sentry.setupKoaErrorHandler(app);
       const { token, user } = ctx.state;
 
       if (user) {
-        ctx.set(tokenToHeaders(user, { headerPrefix: HEADER_PREFIX }));
-        const encodedToken = encodeURIComponent(Buffer.from(token).toString('base64'));
-        ctx.set(`${HEADER_PREFIX}UserInfo`, `${ctx.origin}/userinfo/${encodedToken}`);
+        const headers = tokenToHeaders(user, { headerPrefix: HEADER_PREFIX });
+        ctx.set(headers);
+        ctx.set(HEADER_PREFIX + 'AccessToken', token);
       }
 
       ctx.set('Authorization', '');
-    },
-  );
-
-  router.get(
-    '/userinfo/:encodedToken',
-    async (ctx: Koa.ParameterizedContext<{ token: string }>, next) => {
-      const encodedToken = ctx.params.encodedToken;
-      const token = Buffer.from(encodedToken, 'base64').toString('utf-8');
-      ctx.state.token = token;
-      await next();
-    },
-    issuerMiddleware(),
-    async (ctx: Koa.ParameterizedContext<{ issuer: Issuer; token: string }>, next) => {
-      const { issuer, token } = ctx.state;
-
-      if (!issuer) {
-        ctx.throw(401, 'Issuer not found');
-      }
-
-      const userInfo = await getUserInfo({ url: issuer.metadata.userinfo_endpoint, token });
-
-      ctx.body = userInfo;
     },
   );
 

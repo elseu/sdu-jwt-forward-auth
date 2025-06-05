@@ -8,8 +8,6 @@ import { tokenToHeaders } from './token-to-headers';
 import { tokenMiddleware } from './middleware/token.middleware';
 import { issuerMiddleware } from './middleware/issuer.middleware';
 import { ENVIRONMENT, HEADER_PREFIX, LOG_REQUESTS, PORT } from './constants';
-import { Issuer } from 'openid-client';
-import { getUserInfo } from './userInfo';
 
 type TokenData = Record<string, unknown>;
 

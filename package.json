@@ -28,7 +28,6 @@
     "koa-logger": "^3.2.1",
     "koa-router": "^12.0.1",
     "match-url-wildcard": "0.0.5",
-    "node-cache": "^5.1.2",
     "openid-client": "^5.7.0",
     "transliteration": "^2.3.5"
   },
